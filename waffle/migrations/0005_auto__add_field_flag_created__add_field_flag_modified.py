@@ -16,6 +16,7 @@ default_datetime = now()
 from waffle.compat import get_user_model
 User = get_user_model()
 user_orm_label = '%s.%s' % (User._meta.app_label, User._meta.object_name)
+user_model_label = '%s.%s' % (User._meta.app_label, User._meta.module_name)
 
 class Migration(SchemaMigration):
 
@@ -38,6 +39,17 @@ class Migration(SchemaMigration):
 
 
     models = {
+        user_model_label: {
+            'Meta': {
+                'object_name': User.__name__,
+                'db_table': "'%s'" % User._meta.db_table
+            },
+            User._meta.pk.attname: (
+                'django.db.models.fields.AutoField', [],
+                {'primary_key': 'True',
+                'db_column': "'%s'" % User._meta.pk.column}
+            ),
+        },
         'waffle.flag': {
             'Meta': {'object_name': 'Flag'},
             'authenticated': ('django.db.models.fields.BooleanField', [], {'default': 'False'}),
