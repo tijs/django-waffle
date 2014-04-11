@@ -1,124 +1,175 @@
-# encoding: utf-8
-import datetime
+# -*- coding: utf-8 -*-
+from south.utils import datetime_utils as datetime
 from south.db import db
 from south.v2 import SchemaMigration
 from django.db import models
-from waffle.compat import get_user_model
 
-
-# With the default User model these will be 'auth.User' and 'auth.user'
-# so instead of using orm['auth.User'] we can use orm[user_orm_label]
-User = get_user_model()
-user_orm_label = '%s.%s' % (User._meta.app_label, User._meta.object_name)
-user_model_label = '%s.%s' % (User._meta.app_label, User._meta.module_name)
 
 class Migration(SchemaMigration):
 
     def forwards(self, orm):
-        
         # Adding model 'Flag'
-        db.create_table('waffle_flag', (
-            ('id', self.gf('django.db.models.fields.AutoField')(primary_key=True)),
+        db.create_table(u'waffle_flag', (
+            (u'id', self.gf('django.db.models.fields.AutoField')(primary_key=True)),
             ('name', self.gf('django.db.models.fields.CharField')(unique=True, max_length=100)),
             ('everyone', self.gf('django.db.models.fields.NullBooleanField')(null=True, blank=True)),
             ('percent', self.gf('django.db.models.fields.DecimalField')(null=True, max_digits=3, decimal_places=1, blank=True)),
+            ('testing', self.gf('django.db.models.fields.BooleanField')(default=False)),
             ('superusers', self.gf('django.db.models.fields.BooleanField')(default=True)),
             ('staff', self.gf('django.db.models.fields.BooleanField')(default=False)),
             ('authenticated', self.gf('django.db.models.fields.BooleanField')(default=False)),
+            ('languages', self.gf('django.db.models.fields.TextField')(default='', blank=True)),
             ('rollout', self.gf('django.db.models.fields.BooleanField')(default=False)),
+            ('note', self.gf('django.db.models.fields.TextField')(blank=True)),
+            ('created', self.gf('django.db.models.fields.DateTimeField')(default=datetime.datetime.now, db_index=True)),
+            ('modified', self.gf('django.db.models.fields.DateTimeField')(default=datetime.datetime.now)),
         ))
-        db.send_create_signal('waffle', ['Flag'])
+        db.send_create_signal(u'waffle', ['Flag'])
 
         # Adding M2M table for field groups on 'Flag'
-        db.create_table('waffle_flag_groups', (
+        m2m_table_name = db.shorten_name(u'waffle_flag_groups')
+        db.create_table(m2m_table_name, (
             ('id', models.AutoField(verbose_name='ID', primary_key=True, auto_created=True)),
-            ('flag', models.ForeignKey(orm['waffle.flag'], null=False)),
-            ('group', models.ForeignKey(orm['auth.group'], null=False))
+            ('flag', models.ForeignKey(orm[u'waffle.flag'], null=False)),
+            ('group', models.ForeignKey(orm[u'auth.group'], null=False))
         ))
-        db.create_unique('waffle_flag_groups', ['flag_id', 'group_id'])
+        db.create_unique(m2m_table_name, ['flag_id', 'group_id'])
 
         # Adding M2M table for field users on 'Flag'
-        db.create_table('waffle_flag_users', (
+        m2m_table_name = db.shorten_name(u'waffle_flag_users')
+        db.create_table(m2m_table_name, (
             ('id', models.AutoField(verbose_name='ID', primary_key=True, auto_created=True)),
-            ('flag', models.ForeignKey(orm['waffle.flag'], null=False)),
-            ('user', models.ForeignKey(orm[user_orm_label], null=False))
+            ('flag', models.ForeignKey(orm[u'waffle.flag'], null=False)),
+            ('customuser', models.ForeignKey(orm[u'accounts.customuser'], null=False))
         ))
-        db.create_unique('waffle_flag_users', ['flag_id', 'user_id'])
+        db.create_unique(m2m_table_name, ['flag_id', 'customuser_id'])
 
         # Adding model 'Switch'
-        db.create_table('waffle_switch', (
-            ('id', self.gf('django.db.models.fields.AutoField')(primary_key=True)),
+        db.create_table(u'waffle_switch', (
+            (u'id', self.gf('django.db.models.fields.AutoField')(primary_key=True)),
             ('name', self.gf('django.db.models.fields.CharField')(unique=True, max_length=100)),
             ('active', self.gf('django.db.models.fields.BooleanField')(default=False)),
+            ('note', self.gf('django.db.models.fields.TextField')(blank=True)),
+            ('created', self.gf('django.db.models.fields.DateTimeField')(default=datetime.datetime.now, db_index=True)),
+            ('modified', self.gf('django.db.models.fields.DateTimeField')(default=datetime.datetime.now)),
         ))
-        db.send_create_signal('waffle', ['Switch'])
+        db.send_create_signal(u'waffle', ['Switch'])
+
+        # Adding model 'Sample'
+        db.create_table(u'waffle_sample', (
+            (u'id', self.gf('django.db.models.fields.AutoField')(primary_key=True)),
+            ('name', self.gf('django.db.models.fields.CharField')(unique=True, max_length=100)),
+            ('percent', self.gf('django.db.models.fields.DecimalField')(max_digits=4, decimal_places=1)),
+            ('note', self.gf('django.db.models.fields.TextField')(blank=True)),
+            ('created', self.gf('django.db.models.fields.DateTimeField')(default=datetime.datetime.now, db_index=True)),
+            ('modified', self.gf('django.db.models.fields.DateTimeField')(default=datetime.datetime.now)),
+        ))
+        db.send_create_signal(u'waffle', ['Sample'])
 
 
     def backwards(self, orm):
-        
         # Deleting model 'Flag'
-        db.delete_table('waffle_flag')
+        db.delete_table(u'waffle_flag')
 
         # Removing M2M table for field groups on 'Flag'
-        db.delete_table('waffle_flag_groups')
+        db.delete_table(db.shorten_name(u'waffle_flag_groups'))
 
         # Removing M2M table for field users on 'Flag'
-        db.delete_table('waffle_flag_users')
+        db.delete_table(db.shorten_name(u'waffle_flag_users'))
 
         # Deleting model 'Switch'
-        db.delete_table('waffle_switch')
+        db.delete_table(u'waffle_switch')
+
+        # Deleting model 'Sample'
+        db.delete_table(u'waffle_sample')
 
 
     models = {
-        'auth.group': {
-            'Meta': {'object_name': 'Group'},
-            'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
-            'name': ('django.db.models.fields.CharField', [], {'unique': 'True', 'max_length': '80'}),
-            'permissions': ('django.db.models.fields.related.ManyToManyField', [], {'to': "orm['auth.Permission']", 'symmetrical': 'False', 'blank': 'True'})
+        u'accounts.customuser': {
+            'Meta': {'object_name': 'CustomUser'},
+            'date_joined': ('django.db.models.fields.DateTimeField', [], {'default': 'datetime.datetime.now'}),
+            'email': ('django.db.models.fields.EmailField', [], {'unique': 'True', 'max_length': '254'}),
+            'first_name': ('django.db.models.fields.CharField', [], {'max_length': '30', 'blank': 'True'}),
+            'groups': ('django.db.models.fields.related.ManyToManyField', [], {'to': u"orm['auth.Group']", 'symmetrical': 'False', 'blank': 'True'}),
+            u'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
+            'is_active': ('django.db.models.fields.BooleanField', [], {'default': 'True'}),
+            'is_staff': ('django.db.models.fields.BooleanField', [], {'default': 'False'}),
+            'is_superuser': ('django.db.models.fields.BooleanField', [], {'default': 'False'}),
+            'last_login': ('django.db.models.fields.DateTimeField', [], {'default': 'datetime.datetime.now'}),
+            'last_name': ('django.db.models.fields.CharField', [], {'max_length': '30', 'blank': 'True'}),
+            'password': ('django.db.models.fields.CharField', [], {'max_length': '128'}),
+            'user_permissions': ('django.db.models.fields.related.ManyToManyField', [], {'to': u"orm['auth.Permission']", 'symmetrical': 'False', 'blank': 'True'})
         },
-        'auth.permission': {
-            'Meta': {'ordering': "('content_type__app_label', 'content_type__model', 'codename')", 'unique_together': "(('content_type', 'codename'),)", 'object_name': 'Permission'},
+        u'actstream.action': {
+            'Meta': {'ordering': "('-timestamp',)", 'object_name': 'Action'},
+            'action_object_content_type': ('django.db.models.fields.related.ForeignKey', [], {'blank': 'True', 'related_name': "'action_object'", 'null': 'True', 'to': u"orm['contenttypes.ContentType']"}),
+            'action_object_object_id': ('django.db.models.fields.CharField', [], {'max_length': '255', 'null': 'True', 'blank': 'True'}),
+            'actor_content_type': ('django.db.models.fields.related.ForeignKey', [], {'related_name': "'actor'", 'to': u"orm['contenttypes.ContentType']"}),
+            'actor_object_id': ('django.db.models.fields.CharField', [], {'max_length': '255'}),
+            'data': ('jsonfield.fields.JSONField', [], {'null': 'True', 'blank': 'True'}),
+            'description': ('django.db.models.fields.TextField', [], {'null': 'True', 'blank': 'True'}),
+            u'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
+            'public': ('django.db.models.fields.BooleanField', [], {'default': 'True'}),
+            'target_content_type': ('django.db.models.fields.related.ForeignKey', [], {'blank': 'True', 'related_name': "'target'", 'null': 'True', 'to': u"orm['contenttypes.ContentType']"}),
+            'target_object_id': ('django.db.models.fields.CharField', [], {'max_length': '255', 'null': 'True', 'blank': 'True'}),
+            'timestamp': ('django.db.models.fields.DateTimeField', [], {'default': 'datetime.datetime.now'}),
+            'verb': ('django.db.models.fields.CharField', [], {'max_length': '255'})
+        },
+        u'auth.group': {
+            'Meta': {'object_name': 'Group'},
+            u'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
+            'name': ('django.db.models.fields.CharField', [], {'unique': 'True', 'max_length': '80'}),
+            'permissions': ('django.db.models.fields.related.ManyToManyField', [], {'to': u"orm['auth.Permission']", 'symmetrical': 'False', 'blank': 'True'})
+        },
+        u'auth.permission': {
+            'Meta': {'ordering': "(u'content_type__app_label', u'content_type__model', u'codename')", 'unique_together': "((u'content_type', u'codename'),)", 'object_name': 'Permission'},
             'codename': ('django.db.models.fields.CharField', [], {'max_length': '100'}),
-            'content_type': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['contenttypes.ContentType']"}),
-            'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
+            'content_type': ('django.db.models.fields.related.ForeignKey', [], {'to': u"orm['contenttypes.ContentType']"}),
+            u'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
             'name': ('django.db.models.fields.CharField', [], {'max_length': '50'})
         },
-        user_model_label: {
-            'Meta': {
-                'object_name': User.__name__,
-                'db_table': "'%s'" % User._meta.db_table
-            },
-            User._meta.pk.attname: (
-                'django.db.models.fields.AutoField', [],
-                {'primary_key': 'True',
-                'db_column': "'%s'" % User._meta.pk.column}
-            ),
-        },
-        'contenttypes.contenttype': {
+        u'contenttypes.contenttype': {
             'Meta': {'ordering': "('name',)", 'unique_together': "(('app_label', 'model'),)", 'object_name': 'ContentType', 'db_table': "'django_content_type'"},
             'app_label': ('django.db.models.fields.CharField', [], {'max_length': '100'}),
-            'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
+            u'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
             'model': ('django.db.models.fields.CharField', [], {'max_length': '100'}),
             'name': ('django.db.models.fields.CharField', [], {'max_length': '100'})
         },
-        'waffle.flag': {
+        u'waffle.flag': {
             'Meta': {'object_name': 'Flag'},
             'authenticated': ('django.db.models.fields.BooleanField', [], {'default': 'False'}),
+            'created': ('django.db.models.fields.DateTimeField', [], {'default': 'datetime.datetime.now', 'db_index': 'True'}),
             'everyone': ('django.db.models.fields.NullBooleanField', [], {'null': 'True', 'blank': 'True'}),
-            'groups': ('django.db.models.fields.related.ManyToManyField', [], {'to': "orm['auth.Group']", 'symmetrical': 'False', 'blank': 'True'}),
-            'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
+            'groups': ('django.db.models.fields.related.ManyToManyField', [], {'to': u"orm['auth.Group']", 'symmetrical': 'False', 'blank': 'True'}),
+            u'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
+            'languages': ('django.db.models.fields.TextField', [], {'default': "''", 'blank': 'True'}),
+            'modified': ('django.db.models.fields.DateTimeField', [], {'default': 'datetime.datetime.now'}),
             'name': ('django.db.models.fields.CharField', [], {'unique': 'True', 'max_length': '100'}),
+            'note': ('django.db.models.fields.TextField', [], {'blank': 'True'}),
             'percent': ('django.db.models.fields.DecimalField', [], {'null': 'True', 'max_digits': '3', 'decimal_places': '1', 'blank': 'True'}),
             'rollout': ('django.db.models.fields.BooleanField', [], {'default': 'False'}),
             'staff': ('django.db.models.fields.BooleanField', [], {'default': 'False'}),
             'superusers': ('django.db.models.fields.BooleanField', [], {'default': 'True'}),
-            'users': ('django.db.models.fields.related.ManyToManyField', [], {'to': "orm['%s']" % user_orm_label, 'symmetrical': 'False', 'blank': 'True'})
+            'testing': ('django.db.models.fields.BooleanField', [], {'default': 'False'}),
+            'users': ('django.db.models.fields.related.ManyToManyField', [], {'to': u"orm['accounts.CustomUser']", 'symmetrical': 'False', 'blank': 'True'})
         },
-        'waffle.switch': {
+        u'waffle.sample': {
+            'Meta': {'object_name': 'Sample'},
+            'created': ('django.db.models.fields.DateTimeField', [], {'default': 'datetime.datetime.now', 'db_index': 'True'}),
+            u'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
+            'modified': ('django.db.models.fields.DateTimeField', [], {'default': 'datetime.datetime.now'}),
+            'name': ('django.db.models.fields.CharField', [], {'unique': 'True', 'max_length': '100'}),
+            'note': ('django.db.models.fields.TextField', [], {'blank': 'True'}),
+            'percent': ('django.db.models.fields.DecimalField', [], {'max_digits': '4', 'decimal_places': '1'})
+        },
+        u'waffle.switch': {
             'Meta': {'object_name': 'Switch'},
             'active': ('django.db.models.fields.BooleanField', [], {'default': 'False'}),
-            'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
-            'name': ('django.db.models.fields.CharField', [], {'unique': 'True', 'max_length': '100'})
+            'created': ('django.db.models.fields.DateTimeField', [], {'default': 'datetime.datetime.now', 'db_index': 'True'}),
+            u'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
+            'modified': ('django.db.models.fields.DateTimeField', [], {'default': 'datetime.datetime.now'}),
+            'name': ('django.db.models.fields.CharField', [], {'unique': 'True', 'max_length': '100'}),
+            'note': ('django.db.models.fields.TextField', [], {'blank': 'True'})
         }
     }
 
